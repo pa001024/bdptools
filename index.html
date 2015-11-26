@@ -10,16 +10,20 @@
 .bs-docs-header, .bs-docs-masthead {
 	position: relative;
 	padding: 30px 0;
-	color: #BFD8E3;
+	color: #666;
 	text-align: center;
 	text-shadow: 0 1px 0 rgba(0,0,0,.1);
-	background-color: #7178C2;
-	background-image: -webkit-gradient(linear,left top,left bottom,from(#7178C2),to(#6F94BE));
-	background-image: -webkit-linear-gradient(top,#7178C2 0,#6F94BE 100%);
-	background-image: -o-linear-gradient(top,#7178C2 0,#6F94BE 100%);
-	background-image: linear-gradient(to bottom,#7178C2 0,#6F94BE 100%);
-	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#7178C2', endColorstr='#6F94BE', GradientType=0);
+	background-color: #F0F0F0;
+	background-image: -webkit-gradient(linear,left top,left bottom,from(#F0F0F0),to(#C6C8CC));
+	background-image: -webkit-linear-gradient(top,#F0F0F0 0,#C6C8CC 100%);
+	background-image: -o-linear-gradient(top,#F0F0F0 0,#C6C8CC 100%);
+	background-image: linear-gradient(to bottom,#F0F0F0 0,#C6C8CC 100%);
+	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#F0F0F0', endColorstr='#C6C8CC', GradientType=0);
 	background-repeat: repeat-x;
+}
+.bs-docs-nav {
+	margin: 0;
+	background: #333;
 }
 .bs-docs-header {
 	margin-bottom: 40px;
@@ -28,7 +32,7 @@
 
 .bs-docs-header h1 {
 	margin-top: 0;
-	color: #fff
+	color: #333
 }
 
 .bs-docs-header p {
@@ -72,13 +76,25 @@
 	display: none;
 }
 
+.baidu-logo{
+    height: 36px;
+    width: 113px;
+    float: left;
+    margin-left: 10px;
+    background-position: 0 0;
+    margin-top: 5px;
+    display: inline;
+    outline: 0;
+    background-image: url("http://yun.baidu.com/ppres/static/thirdparty/header/images/frame-icon.png?t=201511263147");
+    background-repeat: no-repeat;
+}
 </style>
 </head>
 <body>
 	<header class="navbar navbar-static-top bs-docs-nav">
 		<div class="container">
 			<div class="navbar-header">
-				<a href="http://live.bilibili.com/" class="navbar-brand"><img src="http://i0.hdslb.com/u_user/live/v3/images/bilibili_live_logo.png" alt="bilibili live"></a>
+				<a href="http://pan.baidu.com/" rel="noreferrer" target="_black" class="navbar-brand baidu-logo"></a>
 			</div>
 		</div>
 	</header>
