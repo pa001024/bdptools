@@ -9,6 +9,14 @@
 		a.rel = "noreferrer";
 		a.download = name;
 		a.href = link;
+		var r = require("common:widget/toast/toast.js");
+		r.obtain.useToast({
+			toastMode: r.obtain.MODE_SUCCESS,
+			msg: '直链转化成功 点击下载按钮或右键复制链接到下载工具进行下载',
+			sticky: !0,
+			position: 4096,
+			closeType: !0
+		});
 	}
 	function step1_transfer() {
 		B.transferFileAsync(yunData.SHARE_ID, yunData.SHARE_UK, yunData.FILENAME, path).then(function(d) {
