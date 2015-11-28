@@ -3,7 +3,7 @@
 var B = {
 	// defalut_salt_md5: "b87b21d39d506bb61b5fb7725379c527",
 	// obfHashAsync: function (path, salt_md5) {
-	// 	var API = "http://pcs.baidu.com/rest/2.0/pcs/file?method=createsuperfile&ondup=overwrite&path=";
+	// 	var API = "http://c2.pcs.baidu.com/rest/2.0/pcs/file?method=createsuperfile&ondup=overwrite&path=";
 	// 	var deferred = Promise.defer();
 	// 	this.getMetaAsync(path).then(function(filemeta){
 	// 		var blocklist = filemeta["block_list"];
