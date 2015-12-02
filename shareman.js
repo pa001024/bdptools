@@ -14,6 +14,15 @@ var B = {
 	// 	});
 	// 	return deferred.promise;
 	// },
+	createGroupInvite: function (gid) {
+		var API = "/mbox/group/invite?gid=";
+		var deferred = Promise.defer();
+		$.get(API + gid, function(meta) {
+			if (!meta.errno) deferred.resolve(meta.link);
+			else deferred.reject(meta);
+		});
+		return deferred.promise;
+	},
 	getMetaAsync: function (path) {
 		var API = "/api/filemetas?blocks=1&dlink=1";
 		var deferred = Promise.defer();
@@ -170,7 +179,7 @@ var B = {
 var storeFile = {},
 	shareFile = {},
 	shared_list = {},
-	ROOT_DIR = "/!电影分类版✓983";
+	ROOT_DIR = "/!电影分类版✓1022";
 
 function refreshStoreFiles() {
 	return B.getDirAsync(ROOT_DIR).then(function(file_list) {
@@ -305,6 +314,8 @@ function toMarkdown(flist) {
 		md += "\n";
 	}
 	md += "共 " + c_mov + " 部电影 " + c_tv + " 部电视剧/番剧";
+	var timeStr = (function(now){return "截至"+(now.getFullYear())+"年"+(now.getMonth() + 1)+"月"+now.getDate()+"日"})(new Date());
+	md = ">（" + timeStr + " 共 " + c_mov + " 部电影 " + c_tv + " 部电视剧/番剧）\n\n" + md;
 	return md;
 }
 
