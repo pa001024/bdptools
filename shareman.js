@@ -275,9 +275,11 @@ function randomCreateShareAsync() {
 			randomPath = arr[1];
 		B.createShareByIdAsync(randomId).then(function(data) {
 			if (data.errno == 110) {
-				deferred.resolve();
 				return;
 			}
+			$.get(data.shorturl,function(){
+				deferred.resolve();
+			});
 			console.log("create share", randomPath, data);
 			randomCreate();
 		});
@@ -330,16 +332,15 @@ function downloadRAW(data,filename) {
 	i.dispatchEvent(o);
 }
 
-
 // <<MAIN>>
 // 获取当前所存文件的信息
 refreshStoreFiles()
 // 获取当前分享文件的信息
-.then(function() { return refreshShareFiles(); })
+.then(refreshShareFiles)
 // 随机创建
-// .then(function() { return randomCreateShareAsync(); })
+// .then(randomCreateShareAsync)
 // 刷新分享信息
-// .then(function() { return refreshShareFiles(); })
+// .then(refreshShareFiles)
 // 输出markdown文档
 .then(function() {
 	// 将结果输出为 带链接的md格式

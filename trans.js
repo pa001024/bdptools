@@ -1,6 +1,29 @@
 // 百度网页版转存后直链下载 v1.0.0
 
-function hellobcs() {
+var B = {
+	getMetaAsync: function (path) {
+		var API = "/api/filemetas?blocks=1&dlink=1";
+		var deferred = Promise.defer();
+		$.post(API, {target: JSON.stringify([path])}, function(meta) {
+			if (!meta.errno) deferred.resolve(meta.info[0]);
+			else deferred.reject(meta);
+		});
+		return deferred.promise;
+	},
+	transferFileAsync: function (shareid, from, filename, path) {
+		var API = "/share/transfer";
+		var deferred = Promise.defer();
+		$.post(API + "?shareid="+shareid+"&from="+from, {
+			filelist: JSON.stringify(["/"+filename]),
+			path: path
+		}, function(data) {
+			deferred.resolve(data);
+		});
+		return deferred.promise;
+	}
+};
+
+!function hellobcs() {
 	if (typeof yunData != "object") return alert("Σ(⊙▽⊙\"a...当前不是分享页面或者页面加载不正确\n请刷新页面再试哦");
 	if (!yunData.MYUK) return alert("_(￣0￣)_~ 请登录后再进行操作");
 	var r = require("common:widget/toast/toast.js");
@@ -24,11 +47,11 @@ function hellobcs() {
 			info(1,'直链转化成功 点击下载按钮或右键复制链接到下载工具进行下载');
 		}
 		function step1_transfer() {
-			B.transferFileAsync(yunData.SHARE_ID, yunData.SHARE_UK, yunData.FILENAME, path).then(function(d) {
+			B.transferFileAsync(yunData.SHARE_ID, yunData.SHARE_UK, yunData.PATH, path).then(function(d) {
 				return B.getMetaAsync(path+"/"+yunData.FILENAME)
-			}).then(function(d) {
+			},function(){info(0,"Σ(⊙▽⊙|||... 未知错误");}).then(function(d) {
 				step2_display(d.server_filename, d.dlink);
-			});
+			},function(){info(0,"Σ(⊙▽⊙|||... 未知错误");});
 		}
 		B.getMetaAsync("/tmp").then(step1_transfer, function(d) {
 			if (d.info[0].errno == -9)
@@ -47,5 +70,4 @@ function hellobcs() {
 			info(0,'直链转化失败 errno='+d.errno);
 		});
 	}
-}
-hellobcs();
+}();
