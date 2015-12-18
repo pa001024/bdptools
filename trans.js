@@ -1,4 +1,4 @@
-// 百度网页版转存后直链下载 v1.0.0
+// 百度网页版转存后直链下载 v1.0.1
 
 var B = {
 	getMetaAsync: function (path) {
@@ -20,23 +20,36 @@ var B = {
 			deferred.resolve(data);
 		});
 		return deferred.promise;
-	}
+	},
+	createDirAsync: function (path) {
+		var API = "/api/create?a=commit";
+		var deferred = Promise.defer();
+		$.post(API, {
+			path: "/"+path,
+			isdir: 1,
+			size: "",
+			block_list: "[]",
+			method: "post"
+		}, function(meta) {
+			if (!meta.errno) deferred.resolve(meta);
+			else deferred.reject(meta);
+		});
+		return deferred.promise;
+	},
 };
 
 !function hellobcs() {
 	if (typeof yunData != "object") return alert("Σ(⊙▽⊙\"a...当前不是分享页面或者页面加载不正确\n请刷新页面再试哦");
 	if (!yunData.MYUK) return alert("_(￣0￣)_~ 请登录后再进行操作");
-	var r = require("common:widget/toast/toast.js");
+	var r = require("disk-system:widget/system/uiService/tip/tip.js");
 	function info(a,b) {
-		r.obtain.useToast({
-			toastMode: a?r.obtain.MODE_SUCCESS:r.obtain.MODE_FAILURE,
+		r.show({
+			mode: a?"success":"caution",
 			msg: b,
-			sticky: !0,
-			position: 4096,
-			closeType: !0
+			autoClose: !1
 		});
 	}
-
+	// 外链
 	if (yunData.FILENAME) {
 		var path = "/tmp";
 		function step2_display(name, link) {
@@ -58,9 +71,11 @@ var B = {
 				B.createDirAsync("/tmp").then(step1_transfer);
 			else info(0,"Σ(⊙▽⊙|||... 未知错误");
 		});
-	} else {
-		var path = unescape(decodeURI(decodeURI(location.hash))).replace(/^(?:#path=\/?)?/,"/");
-		var filename = $(".item-active:first .name").attr("title");
+	}
+	// 文件管理
+	else {
+		var path = unescape(decodeURI(location.hash)).replace(/^(?:#list\/path=\/?)?/,"/");
+		var filename = $(".item-active:first .filename").attr("title");
 		if (!filename) return info(0,"~~ -______-\" 请选中文件");
 		if ($(".item-active:first").data("extname") == "dir") return info(0,"不支持文件夹");
 

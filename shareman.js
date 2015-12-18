@@ -173,15 +173,17 @@ var B = {
 };
 
 
-// 百度网页版分享管理 v1.0.0
+// 百度网页版分享管理 v1.0.1
 
 // 全局变量
 var storeFile = {},
 	shareFile = {},
 	shared_list = {},
+	baned_list = [],
 	ROOT_DIR = "/!电影分类版✓1022";
 
 function refreshStoreFiles() {
+	storeFile = [];
 	return B.getDirAsync(ROOT_DIR).then(function(file_list) {
 		var rename_list = [];
 		var tasks = [];
@@ -210,14 +212,16 @@ function refreshStoreFiles() {
 }
 
 function refreshShareFiles() {
+	shared_list = [];
 	// 获取当前分享文件的状态 如果status=1 自动取消分享
 	return B.getShareRecordAsync().then(function(sharelist) {
+		baned_list = [];
 		sharelist.forEach(function(v) {
 			if (v.fsIds.length == 1) {
 				shared_list[v.fsIds[0]] = 1;
 				if (v.status) {
-					if (v.status == 1) B.cancelShareAsync([v.shareId]);
-					if (v.status == 8) console.log(v.typicalPath + " 已被和谐 请用MD5补档");
+					// if (v.status == 8) console.log(v.typicalPath + " 分享失败");// B.cancelShareAsync([v.shareId]);
+					if (v.status == 1 || v.status == 8) baned_list.push(v.typicalPath);
 				} else shareFile[v.fsIds[0]] = v;
 			}
 		});
@@ -229,6 +233,7 @@ function refreshShareFiles() {
 				}
 			});
 		}
+		console.log(baned_list.length+" 个资源已被和谐 请换MD5补档 输入baned_list查看详情");
 		return Promise.all(tasks);
 	}); 
 }
@@ -269,6 +274,7 @@ function getDirectLink(_path) {
 function randomCreateShareAsync() {
 	var deferred = Promise.defer();
 	var getRandomFile = getRandomList();
+	console.log("[自动分享] 尝试创建分享中");
 	(function randomCreate() {
 		var arr = getRandomFile(),
 			randomId = arr[0],
@@ -280,11 +286,23 @@ function randomCreateShareAsync() {
 			$.get(data.shorturl,function(){
 				deferred.resolve();
 			});
-			console.log("create share", randomPath, data);
+			console.log("create share", randomPath);//, data);
 			randomCreate();
 		});
 	})();
-	return deferred.promise;
+	return deferred.promise.then(function(){
+		console.log("[后台] 可输入以下指令:\n"
+			+"获取列表 refreshStoreFiles().then(refreshShareFiles).then(outputMarkdown)\n"
+			+"创建分享 randomCreateShareAsync()");
+	});
+}
+
+function createrandomCreateTask() {
+	console.log("[自动分享] 自动分享开始 结束输入 clearInterval(createrandomCreateTask.vv)\n"
+		+"快速开始第一次分享输入 randomCreateShareAsync().then(refreshShareFiles)");
+	return createrandomCreateTask.vv=setInterval(function() {
+		randomCreateShareAsync().then(refreshShareFiles);
+	}, 15*6e4);
 }
 
 function sleep(time_ms) {
@@ -293,8 +311,8 @@ function sleep(time_ms) {
 	return deferred.promise;
 }
 
-function toMarkdown(flist) {
-	var md = "", c_mov = 0, c_tv = 0;
+function toMarkdown(flist,link) {
+	var md = "", c_mov = 0, c_tv = 0, c_share = 0;
 	var index_list = [];
 	for(var i in flist) {
 		index_list.push(i);
@@ -304,8 +322,10 @@ function toMarkdown(flist) {
 		var index = index_list[i], v = flist[index];
 		md += "## " + index_list[i] + "\n\n";
 		for (var j = 0; j < v.length; j++) {
-			if (v[j]["shared"])
+			if (v[j]["shared"]) {
 				md += "+ [" + v[j].name + "](" + v[j].shared.shortlink + ")\n";
+				c_share++;
+			}
 			else
 				md += "+ " + v[j].name + "\n";
 			if (index.startsWith("8"))
@@ -315,9 +335,10 @@ function toMarkdown(flist) {
 		};
 		md += "\n";
 	}
-	md += "共 " + c_mov + " 部电影 " + c_tv + " 部电视剧/番剧";
+	md += "共 " + c_mov + " 部电影 " + c_tv + " 部电视剧/番剧 " + c_share + " 已链接";
 	var timeStr = (function(now){return "截至"+(now.getFullYear())+"年"+(now.getMonth() + 1)+"月"+now.getDate()+"日"})(new Date());
-	md = ">（" + timeStr + " 共 " + c_mov + " 部电影 " + c_tv + " 部电视剧/番剧）\n\n" + md;
+	md = ">（" + timeStr + " 共 " + c_mov + " 部电影 " + c_tv + " 部电视剧/番剧 " + c_share + " 部已链接）\n\n" + md;
+	md = "#### [__>>>点此加入百度云群组<<<__](" + link + ")\n\n" + md;
 	return md;
 }
 
@@ -331,7 +352,15 @@ function downloadRAW(data,filename) {
 	o.initEvent("click", !0, !0, window, 1, 0, 0, 0, 0, !1, !1, !1, !1, 0, null);
 	i.dispatchEvent(o);
 }
-
+function outputMarkdown() {
+	// 将结果输出为 带链接的md格式
+	B.createGroupInvite("2031654130988868652").then(function(link) {
+		console.log(link);
+		var md = toMarkdown(storeFile,link);
+		downloadRAW(md, "all.md");
+	});
+	// TODO: 添加豆瓣API自动改名;
+}
 // <<MAIN>>
 // 获取当前所存文件的信息
 refreshStoreFiles()
@@ -342,9 +371,7 @@ refreshStoreFiles()
 // 刷新分享信息
 // .then(refreshShareFiles)
 // 输出markdown文档
-.then(function() {
-	// 将结果输出为 带链接的md格式
-	var md = toMarkdown(storeFile);
-	downloadRAW(md, "all.md");
-	// TODO: 添加豆瓣API自动改名;
-});
+.then(outputMarkdown)
+// 自动分享
+.then(createrandomCreateTask)
+
