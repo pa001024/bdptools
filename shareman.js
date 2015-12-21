@@ -183,7 +183,7 @@ var storeFile = {},
 	ROOT_DIR = "/!电影分类版✓1022";
 
 function refreshStoreFiles() {
-	storeFile = [];
+	storeFile = {};
 	return B.getDirAsync(ROOT_DIR).then(function(file_list) {
 		var rename_list = [];
 		var tasks = [];
@@ -212,7 +212,7 @@ function refreshStoreFiles() {
 }
 
 function refreshShareFiles() {
-	shared_list = [];
+	shared_list = {};
 	// 获取当前分享文件的状态 如果status=1 自动取消分享
 	return B.getShareRecordAsync().then(function(sharelist) {
 		baned_list = [];
@@ -220,8 +220,7 @@ function refreshShareFiles() {
 			if (v.fsIds.length == 1) {
 				shared_list[v.fsIds[0]] = 1;
 				if (v.status) {
-					// if (v.status == 8) console.log(v.typicalPath + " 分享失败");// B.cancelShareAsync([v.shareId]);
-					if (v.status == 1 || v.status == 8) baned_list.push(v.typicalPath);
+					if ((v.status == 1 || v.status == 8) && v.typicalPath.startsWith("/!电影")) baned_list.push(v);
 				} else shareFile[v.fsIds[0]] = v;
 			}
 		});
@@ -233,9 +232,42 @@ function refreshShareFiles() {
 				}
 			});
 		}
-		console.log(baned_list.length+" 个资源已被和谐 请换MD5补档 输入baned_list查看详情");
 		return Promise.all(tasks);
 	}); 
+}
+
+function renameAllFucked() {
+	var deferred = Promise.defer();
+	var i = 0;
+	var omg = baned_list.filter(function(a){ return a.typicalPath.split("/").pop().match(/\.(?:mkv|avi|mp4|rmvb)$/) });
+	(function fuck(){
+		var block = omg.slice(i*30,(++i)*30);
+		if (!block.length) return deferred.resolve();
+		var rnlist = block.reduce(function(a,b) {
+			a.push({path: b.typicalPath, newname: b.typicalPath.split("/").pop()+".防吞"});
+			console.log(b.typicalPath.split("/").pop());
+			return a;
+		},[]);
+		B.renameFileBatchAsync(rnlist).then(fuck,function(){--i;fuck()});
+	})();
+	return deferred.promise;
+}
+
+function cancelAllFucked() {
+	var deferred = Promise.defer();
+	var i = 0;
+	var omg = baned_list.filter(function(a){ return true });
+	(function fuck(){
+		var block = omg.slice(i*30,(++i)*30);
+		if (!block.length) return deferred.resolve();
+		var cclist = block.reduce(function(a,b){
+			a.push(b.shareId);
+			console.log(b.typicalPath.split("/").pop());
+			return a
+		},[]);
+		B.cancelShareAsync(cclist).then(fuck,function(){--i;fuck()});
+	})();
+	return deferred.promise;
 }
 
 function getAvaliableList() {
@@ -274,6 +306,7 @@ function getDirectLink(_path) {
 function randomCreateShareAsync() {
 	var deferred = Promise.defer();
 	var getRandomFile = getRandomList();
+	var created = 0;
 	console.log("[自动分享] 尝试创建分享中");
 	(function randomCreate() {
 		var arr = getRandomFile(),
@@ -281,25 +314,34 @@ function randomCreateShareAsync() {
 			randomPath = arr[1];
 		B.createShareByIdAsync(randomId).then(function(data) {
 			if (data.errno == 110) {
+				if(created) {
+					var timeStr = (function(now){
+						return (now.getMonth() + 1)+"-"+now.getDate()+" "
+							+now.getHours()+":"+(now.getMinutes()+100+"").substr(1);
+					})(new Date());
+					console.log("[后台] 可输入以下指令:\n"
+						+"获取md getmd() 更新列表 getall() 创建分享 cc() 开始定时 rcstart() 结束定时 rcstop()\n"
+						+baned_list.length+" 个资源已被和谐 请换MD5补档 输入baned_list查看详情\n"
+						+" - "+timeStr);
+				}
+				deferred.resolve();
 				return;
 			}
+			// 访问外链检查河蟹
 			$.get(data.shorturl,function(){
-				deferred.resolve();
+				// nothing
+				// console.log("xxx分享失败");
 			});
-			console.log("create share", randomPath);//, data);
+			console.log("create share "+randomPath);//, data);
+			++created;
 			randomCreate();
 		});
 	})();
-	return deferred.promise.then(function(){
-		console.log("[后台] 可输入以下指令:\n"
-			+"获取列表 refreshStoreFiles().then(refreshShareFiles).then(outputMarkdown)\n"
-			+"创建分享 randomCreateShareAsync()");
-	});
+	return deferred.promise;
 }
 
 function createrandomCreateTask() {
-	console.log("[自动分享] 自动分享开始 结束输入 clearInterval(createrandomCreateTask.vv)\n"
-		+"快速开始第一次分享输入 randomCreateShareAsync().then(refreshShareFiles)");
+	console.log("[自动分享] 自动分享开始 结束输入 rcstop()");
 	return createrandomCreateTask.vv=setInterval(function() {
 		randomCreateShareAsync().then(refreshShareFiles);
 	}, 15*6e4);
@@ -312,7 +354,7 @@ function sleep(time_ms) {
 }
 
 function toMarkdown(flist,link) {
-	var md = "", c_mov = 0, c_tv = 0, c_share = 0;
+	var md = "#### [__>>>点此加入百度云群组<<<__](" + link + ")\n\n", c_mov = 0, c_tv = 0, c_share = 0;
 	var index_list = [];
 	for(var i in flist) {
 		index_list.push(i);
@@ -326,19 +368,47 @@ function toMarkdown(flist,link) {
 				md += "+ [" + v[j].name + "](" + v[j].shared.shortlink + ")\n";
 				c_share++;
 			}
-			else
-				md += "+ " + v[j].name + "\n";
-			if (index.startsWith("8"))
-				c_tv++;
-			else
-				c_mov++;
+			else md += "+ " + v[j].name + "\n";
+			if (index.startsWith("8")) c_tv++; else c_mov++;
 		};
 		md += "\n";
 	}
-	md += "共 " + c_mov + " 部电影 " + c_tv + " 部电视剧/番剧 " + c_share + " 已链接";
-	var timeStr = (function(now){return "截至"+(now.getFullYear())+"年"+(now.getMonth() + 1)+"月"+now.getDate()+"日"})(new Date());
-	md = ">（" + timeStr + " 共 " + c_mov + " 部电影 " + c_tv + " 部电视剧/番剧 " + c_share + " 部已链接）\n\n" + md;
-	md = "#### [__>>>点此加入百度云群组<<<__](" + link + ")\n\n" + md;
+	var stat = "共 " + c_mov + " 部电影 " + c_tv + " 部电视剧/番剧 " + c_share + " 已链接 链接覆盖率 " + ~~(c_share/(c_mov+c_tv)*1e3)/10 + "%";
+	md += stat;
+	var timeStr = (function(now){
+		return "截至"+(now.getFullYear())+"年"+(now.getMonth() + 1)+"月"+now.getDate()+"日"
+			+now.getHours()+"时"+(now.getMinutes()+100+"").substr(1)+"分";
+	})(new Date());
+	md = ">（" + timeStr + "\n\n " + stat + "）\n\n" + md;
+	console.log(stat);
+	return md;
+}
+function toShortMarkdown(flist,link) {
+	var md = "#### [__>>>点此加入百度云群组<<<__](" + link + ")\n\n", c_mov = 0, c_tv = 0, c_share = 0;
+	var index_list = [];
+	for(var i in flist) {
+		index_list.push(i);
+	}
+	index_list = index_list.sort();
+	for (var i = 0; i < index_list.length; i++) {
+		var index = index_list[i], v = flist[index];
+		md += "## " + index_list[i] + "\n\n";
+		for (var j = 0; j < v.length; j++) {
+			var film = v[j].name.match(/^\[\d\.\d.*?\].+\.(?:S0?1-\d{1,2}\.)?\d{4}(?:-\d{4}|\.\d{1,2})?(?=\.|$|-)/);
+			if (film) md += "+ " + film[0] + "\n";
+			if (v[j]["shared"]) c_share++;
+			if (index.startsWith("8")) c_tv++; else c_mov++;
+		}
+		md += "\n";
+	}
+	var stat = "共 " + c_mov + " 部电影 " + c_tv + " 部电视剧/番剧 " + c_share + " 已链接 链接覆盖率 " + ~~(c_share/(c_mov+c_tv)*1e3)/10 + "%";
+	md += stat;
+	var timeStr = (function(now){
+		return "截至"+(now.getFullYear())+"年"+(now.getMonth() + 1)+"月"+now.getDate()+"日"
+			+now.getHours()+"时"+(now.getMinutes()+100+"").substr(1)+"分";
+	})(new Date());
+	md = ">（" + timeStr + "\n\n " + stat + "）\n\n" + md;
+	console.log(stat);
 	return md;
 }
 
@@ -352,12 +422,12 @@ function downloadRAW(data,filename) {
 	o.initEvent("click", !0, !0, window, 1, 0, 0, 0, 0, !1, !1, !1, !1, 0, null);
 	i.dispatchEvent(o);
 }
-function outputMarkdown() {
+function outputMarkdown(isShort) {
 	// 将结果输出为 带链接的md格式
-	B.createGroupInvite("2031654130988868652").then(function(link) {
+	return B.createGroupInvite("2031654130988868652").then(function(link) {
 		console.log(link);
-		var md = toMarkdown(storeFile,link);
-		downloadRAW(md, "all.md");
+		var md = (isShort == true?toShortMarkdown:toMarkdown)(storeFile,link);
+		downloadRAW(md, (isShort == true?"short.md":"all.md"));
 	});
 	// TODO: 添加豆瓣API自动改名;
 }
@@ -375,3 +445,20 @@ refreshStoreFiles()
 // 自动分享
 .then(createrandomCreateTask)
 
+
+// 手动指令
+// 获取shortmd
+function smd() { outputMarkdown(!0).then(function(){console.log("done")}) }
+// 获取md
+function getmd() { refreshStoreFiles().then(refreshShareFiles).then(outputMarkdown).then(function(){console.log("done")}) }
+// 更新列表
+function getall() { refreshStoreFiles().then(refreshShareFiles).then(function(){console.log("done")}) }
+// 创建分享
+function cc() { randomCreateShareAsync().then(refreshShareFiles) }
+// 开始定时
+function rcstart() { createrandomCreateTask() }
+// 结束定时
+function rcstop() { clearInterval(createrandomCreateTask.vv);console.log("已取消定时任务") }
+// 帮助
+var help = "获取md getmd() smd() 更新列表 getall() 创建分享 cc() 开始定时 rcstart() 结束定时 rcstop()";
+help
