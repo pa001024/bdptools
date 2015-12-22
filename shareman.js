@@ -1,6 +1,6 @@
 // 百度网页版基本操作库 v1.0.0
 
-var B = {
+window.B = {
 	// defalut_salt_md5: "b87b21d39d506bb61b5fb7725379c527",
 	// obfHashAsync: function (path, salt_md5) {
 	// 	var API = "http://c2.pcs.baidu.com/rest/2.0/pcs/file?method=createsuperfile&ondup=overwrite&path=";
@@ -73,33 +73,22 @@ var B = {
 		});
 		return deferred.promise;
 	},
-	createShareAsync: function (path, pwd) {
-		var API = "/share/set";
-		var deferred = Promise.defer();
-		if (pwd && encodeURIComponent(pwd).replace(/%../g,".").length != 4) 
-			throw new Error(pwd + "is not a valid password!");
-		this.getMetaAsync(path).then(function(meta){
-			$.post(API, {
-				fid_list: JSON.stringify([meta.fs_id]),
-				schannel: 4,
-				channel_list: "[]",
-				pwd: pwd || "1111"
-			}, function(data) {
-				deferred.resolve(data);
-			});
+	createShareAsync: function (path, pwd, hide) {
+		var _this = this;
+		return this.getMetaAsync(path).then(function(meta){
+			return _this.createShareByIdAsync(meta.fs_id, pwd, hide);
 		});
-		return deferred.promise;
 	},
-	createShareByIdAsync: function (fs_id, pwd) {
-		var API = "/share/set";
+	createShareByIdAsync: function (fs_id, pwd, hide) {
+		var API = hide? "/share/pset" : "/share/set";
 		var deferred = Promise.defer();
 		if (pwd && encodeURIComponent(pwd).replace(/%../g,".").length != 4) 
 			throw new Error(pwd + "is not a valid password!");
 		$.post(API, {
 			fid_list: JSON.stringify([fs_id]),
-			schannel: 4,
+			schannel: pwd ? 4 : 0,
 			channel_list: "[]",
-			pwd: pwd || "1111"
+			pwd: pwd
 		}, function(data) {
 			deferred.resolve(data);
 		});
@@ -171,7 +160,6 @@ var B = {
 		return deferred.promise;
 	}
 };
-
 
 // 百度网页版分享管理 v1.0.1
 
@@ -328,11 +316,11 @@ function randomCreateShareAsync() {
 				return;
 			}
 			// 访问外链检查河蟹
-			$.get(data.shorturl,function(){
-				// nothing
-				// console.log("xxx分享失败");
+			$.get(data.shorturl,function(data){
+				data.match('<title>百度云 网盘-链接不存在</title>')
+				&&console.log("[failed] "+randomPath),1 || console.log("[success] "+randomPath);
 			});
-			console.log("create share "+randomPath);//, data);
+			//, data);
 			++created;
 			randomCreate();
 		});
@@ -344,7 +332,7 @@ function createrandomCreateTask() {
 	console.log("[自动分享] 自动分享开始 结束输入 rcstop()");
 	return createrandomCreateTask.vv=setInterval(function() {
 		randomCreateShareAsync().then(refreshShareFiles);
-	}, 15*6e4);
+	}, 58*6e4);// 58min
 }
 
 function sleep(time_ms) {
@@ -379,7 +367,7 @@ function toMarkdown(flist,link) {
 		return "截至"+(now.getFullYear())+"年"+(now.getMonth() + 1)+"月"+now.getDate()+"日"
 			+now.getHours()+"时"+(now.getMinutes()+100+"").substr(1)+"分";
 	})(new Date());
-	md = ">（" + timeStr + "\n\n " + stat + "）\n\n" + md;
+	md = ">" + timeStr + "\n>\n> " + stat + "\n\n" + md;
 	console.log(stat);
 	return md;
 }
@@ -441,12 +429,14 @@ refreshStoreFiles()
 // 刷新分享信息
 // .then(refreshShareFiles)
 // 输出markdown文档
-.then(outputMarkdown)
+// .then(outputMarkdown)
 // 自动分享
 .then(createrandomCreateTask)
 
 
 // 手动指令
+// 获取md
+function md() { outputMarkdown().then(function(){console.log("done")}) }
 // 获取shortmd
 function smd() { outputMarkdown(!0).then(function(){console.log("done")}) }
 // 获取md
@@ -460,5 +450,5 @@ function rcstart() { createrandomCreateTask() }
 // 结束定时
 function rcstop() { clearInterval(createrandomCreateTask.vv);console.log("已取消定时任务") }
 // 帮助
-var help = "获取md getmd() smd() 更新列表 getall() 创建分享 cc() 开始定时 rcstart() 结束定时 rcstop()";
-help
+var help = "获取md() getmd() smd() 更新列表 getall() 创建分享 cc() 开始定时 rcstart() 结束定时 rcstop()";
+console.log(help);
