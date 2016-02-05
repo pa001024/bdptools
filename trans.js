@@ -1,40 +1,42 @@
-// 百度网页版转存后直链下载 v1.0.2
+// 百度网页版转存后直链下载 v1.0.3
 
 var B = {
-	getMetaAsync: function (path) {
+	getMetaAsync: function(path) {
 		var API = "/api/filemetas?blocks=1&dlink=1";
-		var deferred = Promise.defer();
-		$.post(API, { target: JSON.stringify([path]) }, function (meta) {
-			if (!meta.errno) deferred.resolve(meta.info[0]);
-			else deferred.reject(meta);
+		return new Promise(function(resolve, reject) {
+			$.post(API, {
+				target: JSON.stringify([path])
+			}, function(meta) {
+				if (!meta.errno) resolve(meta.info[0]);
+				else reject(meta);
+			});
 		});
-		return deferred.promise;
 	},
-	transferFileAsync: function (shareid, from, filename, path) {
+	transferFileAsync: function(shareid, from, filename, path) {
 		var API = "/share/transfer";
-		var deferred = Promise.defer();
-		$.post(API + "?shareid=" + shareid + "&from=" + from, {
-			filelist: JSON.stringify([(filename.startsWith("/") ? "" : "/") + filename]),
-			path: path
-		}, function (data) {
-			deferred.resolve(data);
+		return new Promise(function(resolve, reject) {
+			$.post(API + "?shareid=" + shareid + "&from=" + from, {
+				filelist: JSON.stringify([(filename.startsWith("/") ? "" : "/") + filename]),
+				path: path
+			}, function(data) {
+				resolve(data);
+			});
 		});
-		return deferred.promise;
 	},
-	createDirAsync: function (path) {
+	createDirAsync: function(path) {
 		var API = "/api/create?a=commit";
-		var deferred = Promise.defer();
-		$.post(API, {
-			path: "/" + path,
-			isdir: 1,
-			size: "",
-			block_list: "[]",
-			method: "post"
-		}, function (meta) {
-			if (!meta.errno) deferred.resolve(meta);
-			else deferred.reject(meta);
+		return new Promise(function(resolve, reject) {
+			$.post(API, {
+				path: "/" + path,
+				isdir: 1,
+				size: "",
+				block_list: "[]",
+				method: "post"
+			}, function(meta) {
+				if (!meta.errno) resolve(meta);
+				else reject(meta);
+			});
 		});
-		return deferred.promise;
 	},
 };
 
